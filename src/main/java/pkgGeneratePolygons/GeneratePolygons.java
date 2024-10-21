@@ -78,41 +78,45 @@ public class GeneratePolygons extends RenderEngine {
 
         }
     }
-    public void drawTriangle() {
-        // Generate a random center position for the triangle
-        float[] center = new float[]{
-                (0.0f), // X coordinate in the range [-1.0, 1.0] my_rand.nextFloat() * 2.0f - 1.0f)
-                (0.0f), // Y coordinate in the range [-1.0, 1.0] my_rand.nextFloat() 1
-                0.0f // Z coordinate
-        };
-
+    public void drawPolygon(float centerX, float centerY) {
         // Generate a random color (RGBA)
         float[] color = {
-               0.0f, // Red
-                2.0f, // Green
-                3.0f, // Blue
-                1.0f // Alpha (fully opaque)
+                0.0f, // Red
+                3.0f, // Green
+                1.0f, // Blue
+                1.0f  // Alpha (fully opaque)
         };
 
-        // Set the color for the triangle
+        // Set the color for the polygon
         glColor4f(color[0], color[1], color[2], color[3]);
 
-        // Draw the triangle
-//        glBegin(GL_TRIANGLES);
-        //for sqaures
-        glBegin(GL_POLYGON);
-        int sides = 8;
-        for (int i = 0; i < sides; i++) { // Three vertices for a triangle
+        glBegin(GL_TRIANGLE_FAN);
+        int sides = 5; // Number of sides for the polygon
+        for (int i = 0; i < sides; i++) {
             // Calculate the angle for each vertex
-            float angle = (float) (2.0f * Math.PI / sides * i); // Full circle divided by number of sides
-
-//            float angle = (float) (2.0f * Math.PI / 3 * i + Math.PI / 2); //for triangles
-//            float angle = (float) (Math.PI / 2 * i); // 90 degrees for each vertex for squares
-            float x = center[0] + RADIUS * (float) Math.cos(angle); // X coordinate
-            float y = center[1] + RADIUS * (float) Math.sin(angle); // Y coordinate
-            glVertex3f(x, y, center[2]); // Specify the vertex
+            float angle = (float) (2.0f * Math.PI / sides * i);
+            float x = centerX + RADIUS * (float) Math.cos(angle); // X coordinate
+            float y = centerY + RADIUS * (float) Math.sin(angle); // Y coordinate
+            glVertex3f(x, y, 0.0f); // Specify the vertex (Z coordinate is 0)
         }
         glEnd();
+    }
+
+    public void drawGrid(int rows, int cols, float spacing) {
+        // Calculate half width and height for centering
+        float halfWidth = (cols - 1) * spacing / 2;
+        float halfHeight = (rows - 1) * spacing / 2;
+
+        // Loop through each row and column
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                // Calculate the center position for each polygon
+                float centerX = col * spacing - halfWidth; // Centering the grid horizontally
+                float centerY = row * spacing - halfHeight; // Centering the grid vertically
+
+                drawPolygon(centerX, centerY); // Draw the polygon at calculated position
+            }
+        }
     }
 
 
@@ -184,12 +188,12 @@ public class GeneratePolygons extends RenderEngine {
             glfwPollEvents();
             glClear(GL_COLOR_BUFFER_BIT);
 
-            drawTriangle(); // Draw the triangle
+            drawGrid(5, 5, 0.4f); // Example: 5 rows, 5 columns, and spacing of 0.4 units
+
             my_wm.swapBuffers();
-
         }
-
     }
+
 
 
 }
