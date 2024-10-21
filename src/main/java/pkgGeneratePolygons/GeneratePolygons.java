@@ -3,24 +3,26 @@ package pkgGeneratePolygons;
 import pkgSlRenderer.RenderEngine;
 
 import java.util.Random;
-
+import java.lang.Thread;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
 import static org.lwjgl.opengl.GL11.*;
 
 
 public class GeneratePolygons extends RenderEngine {
-    private float RADIUS = 0.15f;
+    private float RADIUS = 0.05f;
     private int MAX_SIDES = 40;
     private int MAX_POLYGONS = 5;
     private final int NUM_RGBA = 4;
     private final int NUM_3D_COORDS = 3;
-    private int UPDATE_INTERVAL = 250;
+    private int UPDATE_INTERVAL = 500;
     private float[][] rand_colors;
     private float[][] rand_coords;
     private float[][] coords;
     private float[][] colors;
     private int[] rand_sides;
+    private int currentSideCount = 3; // Start with 3 sides
+    private long lastSideUpdateTime = System.currentTimeMillis(); // Track the last time sides were updated
 
     Random my_rand;
 
@@ -78,45 +80,61 @@ public class GeneratePolygons extends RenderEngine {
 
         }
     }
-    public void drawPolygon(float centerX, float centerY) {
-        // Generate a random color (RGBA)
-        float[] color = {
-                0.0f, // Red
-                3.0f, // Green
-                1.0f, // Blue
-                1.0f  // Alpha (fully opaque)
-        };
-
-        // Set the color for the polygon
-        glColor4f(color[0], color[1], color[2], color[3]);
-
-        glBegin(GL_TRIANGLE_FAN);
-        int sides = 5; // Number of sides for the polygon
-        for (int i = 0; i < sides; i++) {
-            // Calculate the angle for each vertex
-            float angle = (float) (2.0f * Math.PI / sides * i);
-            float x = centerX + RADIUS * (float) Math.cos(angle); // X coordinate
-            float y = centerY + RADIUS * (float) Math.sin(angle); // Y coordinate
-            glVertex3f(x, y, 0.0f); // Specify the vertex (Z coordinate is 0)
-        }
-        glEnd();
-    }
+//    public void drawPolygon(float centerX, float centerY) {
+//        // Generate a random color (RGBA)
+//        float[] color = {
+//                0.0f, // Red
+//                3.0f, // Green
+//                1.0f, // Blue
+//                1.0f  // Alpha (fully opaque)
+//        };
+//
+//        // Set the color for the polygon
+//        glColor4f(color[0], color[1], color[2], color[3]);
+//
+//        glBegin(GL_TRIANGLE_FAN);
+//        int sides = 20; // Number of sides for the polygon
+//        for (int i = 0; i < sides; i++) {
+//            // Calculate the angle for each vertex
+//            float angle = (float) (2.0f * Math.PI / sides * i);
+//            float x = centerX + RADIUS * (float) Math.cos(angle); // X coordinate
+//            float y = centerY + RADIUS * (float) Math.sin(angle); // Y coordinate
+//            glVertex3f(x, y, 0.0f); // Specify the vertex (Z coordinate is 0)
+//        }
+//        glEnd();
+//    }
 
     public void drawGrid(int rows, int cols, float spacing) {
         // Calculate half width and height for centering
         float halfWidth = (cols - 1) * spacing / 2;
         float halfHeight = (rows - 1) * spacing / 2;
 
-        // Loop through each row and column
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++) {
-                // Calculate the center position for each polygon
-                float centerX = col * spacing - halfWidth; // Centering the grid horizontally
-                float centerY = row * spacing - halfHeight; // Centering the grid vertically
+        // Generate a random color (RGBA)
+        float[] color = {
+                my_rand.nextFloat(), // Red
+                my_rand.nextFloat(), // Green
+                my_rand.nextFloat(), // Blue
+                1.0f  // Alpha (fully opaque)
+        };
 
-                drawPolygon(centerX, centerY); // Draw the polygon at calculated position
+        // Set the color for the polygon
+        glColor4f(color[0], color[1], color[2], color[3]);
+        // Loop through each row and column
+        try {
+            Thread.sleep(500);
+            for (int row = 0; row < rows; row++) {
+                for (int col = 0; col < cols; col++) {
+                    // Calculate the center position for each polygon
+                    float centerX = col * spacing - halfWidth; // Centering the grid horizontally
+                    float centerY = row * spacing - halfHeight; // Centering the grid vertically
+
+                    drawPolygon(centerX, centerY, color); // Draw the polygon at calculated position
+                }
             }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
+
     }
 
 
@@ -163,6 +181,22 @@ public class GeneratePolygons extends RenderEngine {
         my_wm.destroyGlfwWindow();
     }
 
+    public void updateRadiusBasedOnWindowSize(int rows, int cols) {
+        int[] windowSize = my_wm.getCurrentWindowSize(); // Get current window size
+        int width = windowSize[0];
+        int height = windowSize[1];
+
+
+        float availableWidth = width / (float) cols;
+        float availableHeight = height / (float) rows;
+
+        // Calculate the radius as half of the smaller dimension available for each polygon
+        float radius = Math.min(availableWidth, availableHeight) / 10.0f; // Adjust this divisor as needed
+
+        // Ensure the radius does not go below the minimum value
+        radius = Math.max(radius, 0.05f); // Set minimum radius
+        setRadius(radius); // Update the radius for the polygons
+    }
 
     @Override
     public void genPolygons(float[] center, float radius, int sides) {
@@ -184,16 +218,56 @@ public class GeneratePolygons extends RenderEngine {
 
     @Override
     public void render() {
+//        updateRadiusBasedOnWindowSize(20, 20);
+        //based on window size determine polygon radius to fit in window
         while (!my_wm.isGlfwWindowClosed()) {
             glfwPollEvents();
             glClear(GL_COLOR_BUFFER_BIT);
 
-            drawGrid(5, 5, 0.4f); // Example: 5 rows, 5 columns, and spacing of 0.4 units
+            drawGrid(20, 20, 0.1f); // Example: 5 rows, 5 columns, and spacing of 0.4 units
 
             my_wm.swapBuffers();
         }
     }
 
+    public void drawPolygon(float centerX, float centerY, float[] color) {
+        // Update the current number of sides
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastSideUpdateTime > UPDATE_INTERVAL) {
+            currentSideCount++;
+            if (currentSideCount > 20) {
+                currentSideCount = 3; // Reset to 3 sides after reaching 20
+            }
+            lastSideUpdateTime = currentTime; // Reset the timer
+        }
+
+//        // Generate a random color (RGBA)
+//        float[] color = {
+//                my_rand.nextFloat(), // Red
+//                my_rand.nextFloat(), // Green
+//                my_rand.nextFloat(), // Blue
+//                1.0f  // Alpha (fully opaque)
+//        };
+//
+//        // Set the color for the polygon
+        glColor4f(color[0], color[1], color[2], color[3]);
+
+        glBegin(GL_TRIANGLE_FAN);
+        for (int i = 0; i < currentSideCount; i++) {
+            // Calculate the angle for each vertex
+            float angle = (float) (2.0f * Math.PI / currentSideCount * i);
+            float x = centerX + RADIUS * (float) Math.cos(angle); // X coordinate
+            float y = centerY + RADIUS * (float) Math.sin(angle); // Y coordinate
+            glVertex3f(x, y, 0.0f); // Specify the vertex (Z coordinate is 0)
+        }
+        glEnd();
+    }
 
 
 }
+
+
+
+
+
+
