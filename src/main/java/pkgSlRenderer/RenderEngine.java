@@ -35,4 +35,7 @@ public abstract class RenderEngine {
 
     public void genPolygons() {
     }
+
+    public void drawRandPolygons() {
+    }
 }
