@@ -26,6 +26,7 @@ public abstract class RenderEngine {
     );
 
 
+
     public void initOpenGL(slWindowManager wm) {
         this.my_wm = wm;
         this.my_wm.updateContextToThis();

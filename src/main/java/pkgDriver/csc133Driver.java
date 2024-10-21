@@ -16,7 +16,8 @@ public class csc133Driver {
         // Initialize OpenGL with the window manager
         my_re.initOpenGL(my_window_manager);
 //        my_re.drawRandPolygons();
-        my_re.render(40, 4, 5);
+        my_re.render();
+//        my_re.render(40, 4, 5);
 
 
 //        slWindowManager.get().initGLFWWindow(WIN_WIDTH, WIN_HEIGHT, "CSUS CSC133");
