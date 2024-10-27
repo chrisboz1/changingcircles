@@ -10,7 +10,7 @@ import static org.lwjgl.opengl.GL11.*;
 
 
 public class GeneratePolygons extends RenderEngine {
-    private float radius = 0.05f;
+    private float radius = 0.02f;
     private int MAX_SIDES = 40;
     private int MAX_POLYGONS = 5;
     private final int NUM_RGBA = 4;
@@ -20,7 +20,7 @@ public class GeneratePolygons extends RenderEngine {
     private float[][] rand_coords;
     private float[][] coords;
     private float[][] colors;
-    private int step = 1; //increase first
+    private int count = 1; //increase first
     private int[] rand_sides;
     private int currentSideCount = 3; // Start with 3 sides
     private long lastSideUpdateTime = System.currentTimeMillis(); // Track the last time sides were updated
@@ -205,6 +205,7 @@ public class GeneratePolygons extends RenderEngine {
     public void render() {
 //        updateRadiusBasedOnWindowSize(20, 20);
         //based on window size determine polygon radius to fit in window
+        //remember 0.5f is very large
         while (!my_wm.isGlfwWindowClosed()) {
             glfwPollEvents();
             glClear(GL_COLOR_BUFFER_BIT);
@@ -217,12 +218,12 @@ public class GeneratePolygons extends RenderEngine {
         // Update the current number of sides
         long currentTime = System.currentTimeMillis();
         if ((currentTime - lastSideUpdateTime > UPDATE_INTERVAL)) {
-            currentSideCount = currentSideCount + step;
+            currentSideCount = currentSideCount + count;
             lastSideUpdateTime = currentTime; // Reset the timer
             if (currentSideCount == MAX_SIDES) {
-                step = -1;
+                count = -1;
             }else if (currentSideCount == 3) {
-                step = 1;
+                count = 1;
             }
         }
         glColor4f(color[0], color[1], color[2], color[3]);
