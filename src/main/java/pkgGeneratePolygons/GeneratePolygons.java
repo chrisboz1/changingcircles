@@ -160,17 +160,10 @@ public class GeneratePolygons extends RenderEngine {
         int[] windowSize = my_wm.getCurrentWindowSize(); // Get current window size
         int width = windowSize[0];
         int height = windowSize[1];
-
-
-        float availableWidth = width / (float) cols;
-        float availableHeight = height / (float) rows;
-
-        // Calculate the radius as half of the smaller dimension available for each polygon
-        float radius = Math.min(availableWidth, availableHeight) / 10.0f; // Adjust this divisor as needed
-
-        // Ensure the radius does not go below the minimum value
-        radius = Math.max(radius, 0.05f); // Set minimum radius
-        setRadius(radius); // Update the radius for the polygons
+        float availableWidth = 1.0f / (float) cols;
+        float availableHeight = 1.0f / (float) rows;
+        float radius = Math.min(availableWidth, availableHeight);
+        setRadius(radius);
     }
 
     @Override
@@ -184,11 +177,28 @@ public class GeneratePolygons extends RenderEngine {
 
     @Override
     public void render(int frameDelay, int rows, int cols) {
-
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        UPDATE_INTERVAL = frameDelay;
+        while (!my_wm.isGlfwWindowClosed()) {
+            glfwPollEvents();
+            glClear(GL_COLOR_BUFFER_BIT);
+            drawGrid(rows, cols);
+            my_wm.swapBuffers();
+        }
     }
 
     @Override
     public void render(float radius) {
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        int rows = (int) Math.floor(1.0f/radius);
+        int cols = (int) Math.floor(1.0f/radius);
+        while (!my_wm.isGlfwWindowClosed()) {
+            glfwPollEvents();
+            glClear(GL_COLOR_BUFFER_BIT);
+            drawGrid(rows, cols);
+            my_wm.swapBuffers();
+        }
+
     }
 
     @Override

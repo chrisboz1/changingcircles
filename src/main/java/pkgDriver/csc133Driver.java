@@ -16,7 +16,7 @@ public class csc133Driver {
         // Initialize OpenGL with the window manager
         my_re.initOpenGL(my_window_manager);
 //        my_re.drawRandPolygons();
-        my_re.render();
+        my_re.render(20, 20, 20);
 
     } // public static void main(String[] my_args)
 } // public class csc133Driver(...)
