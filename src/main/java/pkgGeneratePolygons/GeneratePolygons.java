@@ -10,7 +10,7 @@ import static org.lwjgl.opengl.GL11.*;
 
 
 public class GeneratePolygons extends RenderEngine {
-    private float RADIUS = 0.05f;
+    private float radius = 0.05f;
     private int MAX_SIDES = 40;
     private int MAX_POLYGONS = 5;
     private final int NUM_RGBA = 4;
@@ -20,6 +20,7 @@ public class GeneratePolygons extends RenderEngine {
     private float[][] rand_coords;
     private float[][] coords;
     private float[][] colors;
+    private int step = 1; //increase first
     private int[] rand_sides;
     private int currentSideCount = 3; // Start with 3 sides
     private long lastSideUpdateTime = System.currentTimeMillis(); // Track the last time sides were updated
@@ -33,7 +34,7 @@ public class GeneratePolygons extends RenderEngine {
         rand_sides = new int[MAX_POLYGONS];
     }
     public void setRadius(float radius) {
-        this.RADIUS = Math.max(0.01f, radius);
+        this.radius = Math.max(0.01f, radius);
     }
 
 
@@ -65,8 +66,8 @@ public class GeneratePolygons extends RenderEngine {
         rand_sides = new int[MAX_POLYGONS];
 
         for (int i = 0; i < MAX_POLYGONS; i++) {
-            rand_coords[i][0] = (my_rand.nextFloat() * (2.0f - 2.0f * RADIUS)) - (1.0f - RADIUS);
-            rand_coords[i][1] = (my_rand.nextFloat() * (2.0f - 2.0f * RADIUS)) - (1.0f - RADIUS);
+            rand_coords[i][0] = (my_rand.nextFloat() * (2.0f - 2.0f * radius)) - (1.0f - radius);
+            rand_coords[i][1] = (my_rand.nextFloat() * (2.0f - 2.0f * radius)) - (1.0f - radius);
             rand_coords[i][2] = 0.0f;
 
             // Random colors (RGBA)
@@ -80,35 +81,10 @@ public class GeneratePolygons extends RenderEngine {
 
         }
     }
-//    public void drawPolygon(float centerX, float centerY) {
-//        // Generate a random color (RGBA)
-//        float[] color = {
-//                0.0f, // Red
-//                3.0f, // Green
-//                1.0f, // Blue
-//                1.0f  // Alpha (fully opaque)
-//        };
-//
-//        // Set the color for the polygon
-//        glColor4f(color[0], color[1], color[2], color[3]);
-//
-//        glBegin(GL_TRIANGLE_FAN);
-//        int sides = 20; // Number of sides for the polygon
-//        for (int i = 0; i < sides; i++) {
-//            // Calculate the angle for each vertex
-//            float angle = (float) (2.0f * Math.PI / sides * i);
-//            float x = centerX + RADIUS * (float) Math.cos(angle); // X coordinate
-//            float y = centerY + RADIUS * (float) Math.sin(angle); // Y coordinate
-//            glVertex3f(x, y, 0.0f); // Specify the vertex (Z coordinate is 0)
-//        }
-//        glEnd();
-//    }
 
-    public void drawGrid(int rows, int cols, float spacing) {
-        // Calculate half width and height for centering
-        float halfWidth = (cols - 1) * spacing / 2;
-        float halfHeight = (rows - 1) * spacing / 2;
-
+    public void drawGrid(int rows, int cols) {
+        float startingX = 0f -(cols-1)*radius, startingY = 0f - (rows-1)*radius;
+        updateRadiusBasedOnWindowSize(rows, cols);
         // Generate a random color (RGBA)
         float[] color = {
                 my_rand.nextFloat(), // Red
@@ -116,25 +92,24 @@ public class GeneratePolygons extends RenderEngine {
                 my_rand.nextFloat(), // Blue
                 1.0f  // Alpha (fully opaque)
         };
-
         // Set the color for the polygon
         glColor4f(color[0], color[1], color[2], color[3]);
         // Loop through each row and column
+        float centerX;
+        float centerY;
         try {
             Thread.sleep(500);
             for (int row = 0; row < rows; row++) {
                 for (int col = 0; col < cols; col++) {
                     // Calculate the center position for each polygon
-                    float centerX = col * spacing - halfWidth; // Centering the grid horizontally
-                    float centerY = row * spacing - halfHeight; // Centering the grid vertically
-
+                    centerX = startingX  +radius*2*col ;
+                    centerY = startingY  + radius*2*row ;
                     drawPolygon(centerX, centerY, color); // Draw the polygon at calculated position
                 }
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-
     }
 
 
@@ -168,7 +143,7 @@ public class GeneratePolygons extends RenderEngine {
                     float angle1 = triangle * angle_step;
                     float angle2 = (triangle + 1) * angle_step;
 
-                    generateSegmentVertices(center, v1, v2, RADIUS, angle1, angle2);
+                    generateSegmentVertices(center, v1, v2, radius, angle1, angle2);
 
                     glVertex3f(center[0], center[1], center[2]);
                     glVertex3f(v1[0], v1[1], v1[2]);
@@ -223,9 +198,7 @@ public class GeneratePolygons extends RenderEngine {
         while (!my_wm.isGlfwWindowClosed()) {
             glfwPollEvents();
             glClear(GL_COLOR_BUFFER_BIT);
-
-            drawGrid(20, 20, 0.1f); // Example: 5 rows, 5 columns, and spacing of 0.4 units
-
+            drawGrid(20, 20); // Example: 5 rows, 5 columns, and spacing of 0.4 units
             my_wm.swapBuffers();
         }
     }
@@ -233,31 +206,22 @@ public class GeneratePolygons extends RenderEngine {
     public void drawPolygon(float centerX, float centerY, float[] color) {
         // Update the current number of sides
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastSideUpdateTime > UPDATE_INTERVAL) {
-            currentSideCount++;
-            if (currentSideCount > 20) {
-                currentSideCount = 3; // Reset to 3 sides after reaching 20
-            }
+        if ((currentTime - lastSideUpdateTime > UPDATE_INTERVAL)) {
+            currentSideCount = currentSideCount + step;
             lastSideUpdateTime = currentTime; // Reset the timer
+            if (currentSideCount == MAX_SIDES) {
+                step = -1;
+            }else if (currentSideCount == 3) {
+                step = 1;
+            }
         }
-
-//        // Generate a random color (RGBA)
-//        float[] color = {
-//                my_rand.nextFloat(), // Red
-//                my_rand.nextFloat(), // Green
-//                my_rand.nextFloat(), // Blue
-//                1.0f  // Alpha (fully opaque)
-//        };
-//
-//        // Set the color for the polygon
         glColor4f(color[0], color[1], color[2], color[3]);
-
         glBegin(GL_TRIANGLE_FAN);
         for (int i = 0; i < currentSideCount; i++) {
             // Calculate the angle for each vertex
             float angle = (float) (2.0f * Math.PI / currentSideCount * i);
-            float x = centerX + RADIUS * (float) Math.cos(angle); // X coordinate
-            float y = centerY + RADIUS * (float) Math.sin(angle); // Y coordinate
+            float x = centerX + radius * (float) Math.cos(angle); // X coordinate
+            float y = centerY + radius * (float) Math.sin(angle); // Y coordinate
             glVertex3f(x, y, 0.0f); // Specify the vertex (Z coordinate is 0)
         }
         glEnd();
